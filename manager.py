@@ -907,7 +907,7 @@ class ManagerGenerate(Manager):
                 new_ctx[arch] = {}
                 new_ctx[arch]["cudnn"] = cudnn_manifest
 
-        log.debug(f"cudnn template context {pp(new_ctx, output=False)}")
+        # log.debug(f"cudnn template context {pp(new_ctx, output=False)}")
         self.output_template(
             input_template=input_template, output_path=output_path, ctx=new_ctx
         )
@@ -1035,7 +1035,7 @@ class ManagerGenerate(Manager):
             )
 
         legacy_release_label = None
-        log.debug(f"template context {pp(self.cuda, output=False)}")
+        # log.debug(f"template context {pp(self.cuda, output=False)}")
 
         #  sys.exit(1)
 
