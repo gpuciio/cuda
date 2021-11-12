@@ -1,0 +1,71 @@
+ARG IMAGE_NAME
+FROM ${IMAGE_NAME}:11.5.0-runtime-ubuntu20.04 as base
+
+ENV NV_CUDA_LIB_VERSION "11.5.0-1"
+
+FROM base as base-amd64
+
+ARG LIB_DIR=x86_64-linux-gnu
+
+ENV NV_CUDA_CUDART_DEV_VERSION 11.5.50-1
+ENV NV_NVML_DEV_VERSION 11.5.50-1
+ENV NV_LIBCUSPARSE_DEV_VERSION 11.7.0.31-1
+ENV NV_LIBNPP_DEV_VERSION 11.5.1.53-1
+ENV NV_LIBNPP_DEV_PACKAGE libnpp-dev-11-5=${NV_LIBNPP_DEV_VERSION}
+
+ENV NV_LIBCUBLAS_DEV_VERSION 11.7.3.1-1
+ENV NV_LIBCUBLAS_DEV_PACKAGE_NAME libcublas-dev-11-5
+ENV NV_LIBCUBLAS_DEV_PACKAGE ${NV_LIBCUBLAS_DEV_PACKAGE_NAME}=${NV_LIBCUBLAS_DEV_VERSION}
+
+ENV NV_LIBNCCL_DEV_PACKAGE_NAME libnccl-dev
+ENV NV_LIBNCCL_DEV_PACKAGE_VERSION 2.11.4-1
+ENV NCCL_VERSION 2.11.4-1
+ENV NV_LIBNCCL_DEV_PACKAGE ${NV_LIBNCCL_DEV_PACKAGE_NAME}=${NV_LIBNCCL_DEV_PACKAGE_VERSION}+cuda11.5
+
+FROM base as base-arm64
+
+ARG LIB_DIR=aarch64-linux-gnu
+
+ENV NV_CUDA_CUDART_DEV_VERSION 11.5.50-1
+ENV NV_NVML_DEV_VERSION 11.5.50-1
+ENV NV_LIBCUSPARSE_DEV_VERSION 11.7.0.31-1
+ENV NV_LIBNPP_DEV_VERSION 11.5.1.53-1
+ENV NV_LIBNPP_DEV_PACKAGE libnpp-dev-11-5=${NV_LIBNPP_DEV_VERSION}
+
+ENV NV_LIBCUBLAS_DEV_PACKAGE_NAME libcublas-dev-11-5
+ENV NV_LIBCUBLAS_DEV_VERSION 11.7.3.1-1
+ENV NV_LIBCUBLAS_DEV_PACKAGE ${NV_LIBCUBLAS_DEV_PACKAGE_NAME}=${NV_LIBCUBLAS_DEV_VERSION}
+
+ENV NV_LIBNCCL_DEV_PACKAGE_NAME libnccl-dev
+ENV NV_LIBNCCL_DEV_PACKAGE_VERSION 2.11.4-1
+ENV NCCL_VERSION 2.11.4-1
+ENV NV_LIBNCCL_DEV_PACKAGE ${NV_LIBNCCL_DEV_PACKAGE_NAME}=${NV_LIBNCCL_DEV_PACKAGE_VERSION}+cuda11.5
+
+FROM base-${TARGETARCH}
+
+ARG TARGETARCH
+
+LABEL maintainer "NVIDIA CORPORATION <cudatools@nvidia.com>"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libtinfo5 libncursesw5 \
+    cuda-cudart-dev-11-5=${NV_CUDA_CUDART_DEV_VERSION} \
+    cuda-command-line-tools-11-5=${NV_CUDA_LIB_VERSION} \
+    cuda-minimal-build-11-5=${NV_CUDA_LIB_VERSION} \
+    cuda-libraries-dev-11-5=${NV_CUDA_LIB_VERSION} \
+    cuda-nvml-dev-11-5=${NV_NVML_DEV_VERSION} \
+    ${NV_LIBNPP_DEV_PACKAGE} \
+    libcusparse-dev-11-5=${NV_LIBCUSPARSE_DEV_VERSION} \
+    ${NV_LIBCUBLAS_DEV_PACKAGE} \
+    && rm -rf /var/lib/apt/lists/*
+
+ADD nccl_2.11.4-1+cuda11.5_${TARGETARCH}.txz /tmp/
+
+RUN mv /tmp/nccl*/lib/pkgconfig/* /usr/lib/pkgconfig/ && rm -rf /tmp/nccl*/lib/pkgconfig/ \
+    && mv /tmp/nccl*/lib/* /usr/lib/${LIB_DIR}/ \
+    && mv /tmp/nccl*/include/* /usr/include/
+
+# Keep apt from auto upgrading the cublas and nccl packages. See https://gitlab.com/nvidia/container-images/cuda/-/issues/88
+RUN apt-mark hold ${NV_LIBCUBLAS_DEV_PACKAGE_NAME}
+
+ENV LIBRARY_PATH /usr/local/cuda/lib64/stubs
