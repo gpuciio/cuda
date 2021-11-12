@@ -77,8 +77,14 @@ RUN yum install -y \
     ${NV_LIBNPP_PACKAGE} \
     {% endif %}
     libcublas-{{ cuda.version.major }}-{{ cuda.version.minor }}-${NV_LIBCUBLAS_VERSION} \
-    {% if has_libnccl_package %}
+    {% if False %}
     ${NV_LIBNCCL_PACKAGE} \
     {% endif %}
     && yum clean all \
     && rm -rf /var/cache/yum/*
+
+ADD nccl_2.11.4-1+cuda11.5_${TARGETARCH}.txz /tmp/
+
+RUN mv /tmp/nccl*/lib/pkgconfig/* /usr/lib64/pkgconfig/ && rm -rf /tmp/nccl*/lib/{pkgconfig,*.a} \
+    && mv /tmp/nccl*/lib/* /usr/lib64/ \
+    && mv /tmp/nccl*/include/* /usr/include/
